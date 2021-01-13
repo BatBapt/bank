@@ -2,15 +2,25 @@ from datetime import datetime
 
 from account import Account
 from person import Person
+from database import Database
 
-bapt_birth = datetime.strptime('23-07-1999', "%d-%m-%Y")
-paul_birth = datetime.strptime('17-01-2001', "%d-%m-%Y")
 
-p1 = Person("Baptiste", "LEROUX", "titounne", bapt_birth, "0102030405", "baptiste@gmail.com")
-p2 = Person("Paul", "LEROUX", "paulo", paul_birth, "0203040506", "paul@gmail.com")
+db = Database()
+db.init_db()
 
-c1 = Account(p1, 50.0)
+"""
+p1 = Person("Paul", "LEROUX", "17-01-2001", "0203040506", "paul@gmail.com")
+c1 = Account(p1, 75.0)
+db.insert_person(p1)
+db.insert_account(c1)
+
+p2 = Person("Baptiste", "LEROUX", "23-07-1999", "0102030405", "baptiste@gmail.com")
 c2 = Account(p2, 75.0)
+db.insert_person(p2)
+db.insert_account(c2)
+"""
 
-print(c1)
-print(c2)
+persons = db.display_all_person()
+for person in persons:
+    print(person)
+    print("\n")

@@ -17,7 +17,8 @@ class Account:
             sys.exit(1)
 
         self._owner = owner
-        self._solde = initial_depo
+        self._balance = initial_depo
+
 
     # Getter
 
@@ -26,19 +27,24 @@ class Account:
         return self._owner
 
     @property
-    def solde(self):
-        return self._solde
+    def balance(self):
+        return self._balance
+
+
+    @property
+    def password(self):
+        return self._password
 
     # Setter
 
-    @solde.setter
-    def solde(self, amount):
+    @balance.setter
+    def balance(self, amount):
         try:
             assert isinstance(amount, float), "{Account:solde.setter}, Erreur le montant doit être un nombre"
         except AssertionError as e:
             print(e)
             sys.exit(1)
-        self._solde += amount
+        self._balance += amount
 
     # Methods
 
