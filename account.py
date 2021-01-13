@@ -6,7 +6,6 @@ from person import Person
 
 
 class Account:
-    account_id = 0
 
     def __init__(self, owner, initial_depo):
         try:
@@ -17,15 +16,20 @@ class Account:
             print(e)
             sys.exit(1)
 
-        self.__account_id = Account.account_id
-        self.owner = owner
+        self._owner = owner
         self._solde = initial_depo
 
-        Account.account_id += 1
+    # Getter
+
+    @property
+    def owner(self):
+        return self._owner
 
     @property
     def solde(self):
         return self._solde
+
+    # Setter
 
     @solde.setter
     def solde(self, amount):
@@ -36,8 +40,10 @@ class Account:
             sys.exit(1)
         self._solde += amount
 
+    # Methods
+
     def __repr__(self):
-        string = "Propriétaire du compte {}: {}\n".format(self.__account_id, self.owner.full_name)
+        string = "Propriétaire du compte: {}\n".format(self._owner.full_name)
         string += "Solde sur le compte: {} €".format(self._solde)
 
         return string
