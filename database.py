@@ -261,6 +261,18 @@ class Database:
             list_person.append(p)
         return list_person
 
+    def display_person_by_iban(self, iban):
+        req = '''
+        SELECT last_name, first_name
+        FROM person
+        INNER JOIN account
+        ON account.person_id = person.id
+        WHERE iban = ?
+        '''
+        self._cursor.execute(req, (iban, ))
+        return self._cursor.fetchone()
+
+
     def check_email_exists(self, email):
         try:
             assert isinstance(email, str), "[Database:display_person_by_email]: Erreur l'adresse mail doit être une chaine de caractère"
@@ -327,6 +339,44 @@ class Database:
 
         num_account = account.num_account
         return num_account
+
+    def get_account_by_iban(self, iban):
+        req = '''
+        SELECT *
+        FROM account
+        WHERE iban=?
+        '''
+        self._cursor.execute(req, (iban, ))
+        row = list(self._cursor.fetchone())
+        c = Account(row[0])
+        row[1] = self.select_person_by_id(row[1])
+        c.instanciate_account_from_bdd(row[1:])
+        return c
+
+    def transaction(self, account1, account2, amount):
+        iban_account1 = account1.iban
+        account_from = self.get_account_by_iban(iban_account1)
+        iban_in_bene = self.check_iban_exist("beneficiaire", account_from.account_id, iban_account1)
+        if iban_in_bene is None:
+            print("Virement impossible car le bénéficiaire n'est pas dans votre liste")
+            return False
+
+        iban_account2 = account2.iban
+        account_to = self.get_account_by_iban(iban_account2)
+        account_from.transaction(account_to, amount)
+        self.update_balance(account_from.balance, iban_account1)
+        self.update_balance(account_to.balance, iban_account2)
+
+        return True
+
+    def update_balance(self, amount, iban):
+        req = '''
+        UPDATE  account
+        SET balance = ?
+        WHERE iban = ?
+        '''
+        self._cursor.execute(req, (amount, iban))
+        self.__conn.commit()
 
     # Get beneficiaire methods
     def display_all_beneficiaire(self, account_id):

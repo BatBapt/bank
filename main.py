@@ -34,5 +34,9 @@ for account in accounts:
     print("*"*40)
     print(account)
 
-bene = db.display_all_beneficiaire(account.account_id)
-print(bene)
+account1 = accounts[0]
+account2 = accounts[1]
+
+virement_ok = db.transaction(account1, account2, 50.0)
+if virement_ok:
+    print("Virement de {}€ effectué vers le compte {}".format(50, account1.num_account))

@@ -14,6 +14,7 @@ class Account:
             Account.num_id += 1
 
             self._num_account = self.gen_num_account()
+            print(self._num_account)
             self._iban = "FR142004301003{}06".format(self._num_account)
         else:
             try:
@@ -62,7 +63,7 @@ class Account:
     @balance.setter
     def balance(self, amount):
         try:
-            assert isinstance(amount, float), "[Account:solde.setter], Erreur le montant doit être un nombre"
+            assert isinstance(amount, float), "[Account:balance.setter], Erreur le montant doit être un nombre"
         except AssertionError as e:
             print(e)
             sys.exit(1)
@@ -118,3 +119,7 @@ class Account:
         self._balance = param[1]
         self._num_account = param[2]
         self._iban = param[3]
+
+    def transaction(self, account, amount):
+        self._balance = self._balance - amount
+        account.balance = amount
