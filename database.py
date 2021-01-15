@@ -1,6 +1,6 @@
 import sqlite3
 import sys
-from datetime import datetime
+import datetime
 
 from person import Person
 from account import Account
@@ -50,10 +50,23 @@ class Database:
         );
         """
 
+        create_table_historic = """
+        CREATE TABLE IF NOT EXISTS historic(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_from_id INTEGER NOT NULL,
+            account_to_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            date DATETIME NOT NULL,
+            FOREIGN KEY(account_from_id) REFERENCES account (id),
+            FOREIGN KEY(account_to_id) REFERENCES account (id)
+        );
+        """
+
         try:
             self._cursor.execute(create_table_person)
             self._cursor.execute(create_table_account)
             self._cursor.execute(create_table_beneficiaire)
+            self._cursor.execute(create_table_historic)
         except sqlite3.Error as e:
             print(e)
             sys.exit(1)
@@ -74,10 +87,10 @@ class Database:
 
         if self.check_email_exists(email) is not None:
             print("Erreur cet email existe déjà.")
-            return -1
+            return False
         if self.check_phone_exists(phone_number) is not None:
             print("Erreur ce numéro de téléphone existe déjà.")
-            return -1
+            return False
 
 
         req = '''
@@ -107,7 +120,7 @@ class Database:
 
         # print("Insertion de {} correctement éffectuée.".format(owner.full_name))
 
-        return self._cursor.lastrowid
+        return True
 
     def insert_account(self, account):
         try:
@@ -175,7 +188,34 @@ class Database:
         print("Bénéficiaire ajouté")
         return self._cursor.lastrowid
 
-    # Get Person methods
+    def insert_historic(self, acc_from_id, acc_to_id, amount):
+        try:
+            assert isinstance(acc_from_id, int), "[Database:insert_historic] Erreur le compte d'origine n'est pas un entier"
+            assert isinstance(acc_to_id, int), "[Database:insert_historic] Erreur le compte bénéficiaire n'est pas un entier"
+            assert isinstance(amount, float), "[Database:insert_historic] Erreur le montant n'est pas un réel"
+        except AssertionError as e:
+            print(e)
+            sys.exit(1)
+
+
+        req = '''
+        INSERT INTO historic (account_from_id, account_to_id, amount, date)
+        VALUES (?, ?, ?, ?)
+        '''
+
+        date = datetime.datetime.now()
+        try:
+            self._cursor.execute(req, (acc_from_id, acc_to_id, amount, date))
+        except sqlite3.Error as e:
+            print(e)
+            sys.exit(1)
+
+        self.__conn.commit()
+
+        return self._cursor.lastrowid
+
+
+    # Person methods
     def display_all_person(self):
         req = 'SELECT * FROM person'
         self._cursor.execute(req)
@@ -307,7 +347,7 @@ class Database:
         row = self._cursor.fetchone()
         return row[0]
 
-    # Get Account methods
+    # Account methods
     def display_all_account(self):
         req = 'SELECT * FROM account'
         self._cursor.execute(req)
@@ -356,16 +396,19 @@ class Database:
     def transaction(self, account1, account2, amount):
         iban_account1 = account1.iban
         account_from = self.get_account_by_iban(iban_account1)
-        iban_in_bene = self.check_iban_exist("beneficiaire", account_from.account_id, iban_account1)
+
+        iban_account2 = account2.iban
+        iban_in_bene = self.check_iban_exist("beneficiaire", account_from.account_id, iban_account2)
         if iban_in_bene is None:
             print("Virement impossible car le bénéficiaire n'est pas dans votre liste")
             return False
-
-        iban_account2 = account2.iban
         account_to = self.get_account_by_iban(iban_account2)
         account_from.transaction(account_to, amount)
         self.update_balance(account_from.balance, iban_account1)
         self.update_balance(account_to.balance, iban_account2)
+
+
+        self.insert_historic(account_from.account_id, account_to.account_id, amount)
 
         return True
 
@@ -378,7 +421,7 @@ class Database:
         self._cursor.execute(req, (amount, iban))
         self.__conn.commit()
 
-    # Get beneficiaire methods
+    # Beneficiaire methods
     def display_all_beneficiaire(self, account_id):
         req = 'SELECT * FROM beneficiaire WHERE account_id=?'
         self._cursor.execute(req, (account_id, ))
@@ -388,3 +431,10 @@ class Database:
         req = 'SELECT iban FROM {} WHERE iban=? AND id=?'.format(table)
         self._cursor.execute(req, (iban, id, ))
         return self._cursor.fetchone()
+
+    # Historic methods
+
+    def display_all_historic(self, account_id):
+        req = 'SELECT * FROM historic WHERE account_from_id=?'
+        self._cursor.execute(req, (account_id, ))
+        return self._cursor.fetchall()

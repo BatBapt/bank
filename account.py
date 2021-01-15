@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 
 from random import randint, choice
@@ -14,7 +12,6 @@ class Account:
             Account.num_id += 1
 
             self._num_account = self.gen_num_account()
-            print(self._num_account)
             self._iban = "FR142004301003{}06".format(self._num_account)
         else:
             try:
