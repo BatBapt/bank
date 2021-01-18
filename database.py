@@ -44,9 +44,9 @@ class Database:
         create_table_beneficiaire = """
         CREATE TABLE IF NOT EXISTS beneficiaire(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            account_id INTEGER NOT NULL,
+            person_id INTEGER NOT NULL,
             iban VARCHAR(27) NOT NULL UNIQUE,
-            FOREIGN KEY(account_id) REFERENCES account (id)
+            FOREIGN KEY(person_id) REFERENCES person (id)
         );
         """
 
@@ -224,82 +224,35 @@ class Database:
         for row in rows:
             row = list(row)
             p = Person(row[0])
-            p.instanciate_perso_from_bdd(list(row[1:]))
+            p.instanciate_perso_from_bdd(row[1:])
             list_person.append(p)
         return list_person
+
+    def check_person_exist(self, email, pwd):
+        req = '''
+        SELECT *
+        FROM person
+        WHERE email = ? AND password = ?
+        '''
+        self._cursor.execute(req, (email, pwd, ))
+        row = self._cursor.fetchone()
+        if row is None:
+            return False
+        row = list(row)
+        p = Person(row[0])
+        p.instanciate_perso_from_bdd(row[1:])
+        return p
 
     def select_person_by_id(self, person_id):
         req = 'SELECT * FROM person WHERE id=?'
         self._cursor.execute(req, (person_id, ))
         row = self._cursor.fetchone()
+        if row is None:
+            return False
         row = list(row)
         p = Person(row[0])
         p.instanciate_perso_from_bdd(row[1:])
         return p
-
-    def display_person_by_email(self, email):
-        try:
-            assert isinstance(email, str), "[Database:display_person_by_email]: Erreur l'adresse mail doit être une chaine de caractère"
-            assert "@" in email, "[Database:display_person_by_email]: Erreur l'adresse mail n'est pas au bon format"
-        except AssertionError as e:
-            print(e)
-            sys.exit(-1)
-        req = 'SELECT * FROM person WHERE email=?'
-        self._cursor.execute(req, (email,))
-        row = self._cursor.fetchone()
-        row = list(row)
-        p = Person(row[0])
-        p.instanciate_perso_from_bdd(row[1:])
-        return p
-
-    def display_person_by_phone(self, phone):
-        try:
-            assert isinstance(phone, str), "[Database:display_person_by_phone]: Erreur le numéro de téléphone doit être une chaine de caractère"
-            assert len(phone) == 10, "[Database:display_person_by_phone]: Erreur le numéro de téléphone est au mauvais format"
-        except AssertionError as e:
-            print(e)
-            sys.exit(-1)
-        req = 'SELECT * FROM person WHERE phone_number=?'
-        self._cursor.execute(req, (phone,))
-        rrow = self._cursor.fetchone()
-        row = list(row)
-        p = Person(row[0])
-        p.instanciate_perso_from_bdd(row[1:])
-        return p
-
-    def display_person_by_first_name(self, first_name):
-        try:
-            assert isinstance(first_name, str), "[Personne:display_person_by_first_name]: Erreur le numéro de téléphone doit être une chaine de caractère"
-        except AssertionError as e:
-            print(e)
-            sys.exit(-1)
-        req = 'SELECT * FROM person WHERE first_name=?'
-        self._cursor.execute(req, (first_name,))
-        rows = self._cursor.fetchall()
-        list_person = []
-        for row in rows:
-            row = list(row)
-            p = Person(row[0])
-            p.instanciate_perso_from_bdd(list(row[1:]))
-            list_person.append(p)
-        return list_person
-
-    def display_person_by_last_name(self, last_name):
-        try:
-            assert isinstance(last_name, str), "[Personne:display_person_by_first_name]: Erreur le numéro de téléphone doit être une chaine de caractère"
-        except AssertionError as e:
-            print(e)
-            sys.exit(-1)
-        req = 'SELECT * FROM person WHERE last_name=?'
-        self._cursor.execute(req, (last_name,))
-        rows = self._cursor.fetchall()
-        list_person = []
-        for row in rows:
-            row = list(row)
-            p = Person(row[0])
-            p.instanciate_perso_from_bdd(list(row[1:]))
-            list_person.append(p)
-        return list_person
 
     def display_person_by_iban(self, iban):
         req = '''
@@ -311,7 +264,6 @@ class Database:
         '''
         self._cursor.execute(req, (iban, ))
         return self._cursor.fetchone()
-
 
     def check_email_exists(self, email):
         try:
@@ -348,9 +300,14 @@ class Database:
         return row[0]
 
     # Account methods
-    def display_all_account(self):
-        req = 'SELECT * FROM account'
-        self._cursor.execute(req)
+
+    def display_perso_account(self, person_id):
+        req = '''
+        SELECT *
+        FROM account
+        WHERE person_id = ?
+        '''
+        self._cursor.execute(req, (person_id, ))
         rows = self._cursor.fetchall()
         list_account = []
         for row in rows:
@@ -423,7 +380,7 @@ class Database:
 
     # Beneficiaire methods
     def display_all_beneficiaire(self, account_id):
-        req = 'SELECT * FROM beneficiaire WHERE account_id=?'
+        req = 'SELECT * FROM beneficiaire WHERE person_id=?'
         self._cursor.execute(req, (account_id, ))
         return self._cursor.fetchall()
 
