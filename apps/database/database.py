@@ -36,6 +36,7 @@ class Database:
         create_table_account = """
         CREATE TABLE IF NOT EXISTS account(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(100) NOT NULL,
             person_id INTEGER NOT NULL,
             balance REAL NOT NULL,
             num_account CHAR(11) NOT NULL UNIQUE,
@@ -127,31 +128,33 @@ class Database:
         success_msg = "Votre profil a bien été ajouté. Veuillez vous connecter maintenant."
         return True, success_msg
 
-    def insert_account(self, account):
+    def insert_account(self, acc):
         try:
-            assert isinstance(account, account.Account), "[Database:insert_account] Erreur ce n'est pas un compte."
+            assert isinstance(acc, account.Account), "[Database:insert_account] Erreur ce n'est pas un compte."
         except AssertionError as e:
             print(e)
             sys.exit(1)
 
-        person_id = self.get_id_by_email(account.owner.email)
-        balance = account.balance
-        num_account = account.num_account
-        iban = account.iban
+        person_id = self.get_id_by_email(acc.owner.email)
+        balance = acc.balance
+        num_account = acc.num_account
+        iban = acc.iban
+        name = acc.account_name
 
-        num_account = self.check_num_account(account)
+        num_account = self.check_num_account(acc)
 
         req = '''
         INSERT INTO account(
             person_id,
+            name,
             balance,
             num_account,
             iban
-            ) VALUES (?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?)
         '''
 
         try:
-            self._cursor.execute(req, [person_id, balance, num_account, iban])
+            self._cursor.execute(req, [person_id, name, balance, num_account, iban])
         except sqlite3.Error as e:
             print(e)
             sys.exit(1)
@@ -316,9 +319,9 @@ class Database:
         list_account = []
         for row in rows:
             row = list(row)
-            row[1] = self.select_person_by_id(row[0])
-            c = account.Account(row[0])
-            c.instanciate_account_from_bdd(row[1:])
+            row[2] = self.select_person_by_id(row[0])
+            c = account.Account(row[0], row[1])
+            c.instanciate_account_from_bdd(row[2:])
             list_account.append(c)
         return list_account
 

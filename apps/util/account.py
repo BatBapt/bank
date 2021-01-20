@@ -10,7 +10,7 @@ except ImportError as e:
 
 class Account:
     num_id = 0
-    def __init__(self, account_id=None, num_account=None):
+    def __init__(self, balance, account_name, account_id=None, num_account=None):
         if account_id is None:
             self._account_id = Account.num_id
             Account.num_id += 1
@@ -28,13 +28,18 @@ class Account:
             self._iban = ""
 
         self._owner = ""
-        self._balance = 0
+        self._balance = balance
+        self._account_name = account_name
 
 
     # Getter
     @property
     def account_id(self):
         return self._account_id
+
+    @property
+    def account_name(self):
+        return self._account_name
 
     @property
     def owner(self):
@@ -61,6 +66,16 @@ class Account:
             print(e)
             sys.exit(1)
         self._owner = new_owner
+
+    @account_name.setter
+    def account_name(self, name):
+        try:
+            assert isinstance(name, str), "[Account:account_name.setter], Erreur le nom du compte doit être une chaine de caractère"
+        except AssertionError as e:
+            print(e)
+            sys.exit(1)
+        self.account_name = name
+
     @balance.setter
     def balance(self, amount):
         try:
