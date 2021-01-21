@@ -12,6 +12,7 @@ try:
     import apps.database.database as db
 
     import apps.interface.login as login
+    import apps.interface.details as details
 except ImportError as e:
     print("Home: {}".format(e))
     sys.exit(1)
@@ -22,9 +23,9 @@ class Home(tk.Frame):
     btn_bg_color = "#4892F0"
 
     def __init__(self, master, perso, database):
-
         try:
             assert isinstance(perso, person.Person), "Erreur"
+            assert isinstance(database, db.Database), "Erreur"
         except AssertionError as e:
             print(e)
             sys.exit(1)
@@ -55,12 +56,21 @@ class Home(tk.Frame):
 
         self.welcome()
 
-        self.account_tab = ttk.Treeview(self.frame, columns=('numeroCompte', 'name', 'solde', 'informations'))
+        self.account_tab = ttk.Treeview(self.frame, columns=('iban', 'name', 'solde', 'informations'))
 
         self.display_all_personnal_account()
 
         deco_btn = tk.Button(self.frame, text="Se déconnecter", font=btn_font, command=self.deconnect)
         deco_btn.pack(pady=(20, 20))
+
+        self.account_tab.bind("<Double-1>", self.details)
+
+    def details(self, event):
+        item_id = self.account_tab.focus()
+        item = self.account_tab.item(item_id)
+        acc_iban = item['values'][0]
+        acc = self.db.get_account_by_iban(acc_iban)
+        details.Details(self.master, self._person, acc, self.db)
 
     def menu_widget(self):
         self.add_menu.add_command(label="Compte", command=self.new_account)
@@ -77,7 +87,7 @@ class Home(tk.Frame):
             login.Login(self.master)
 
     def display_all_personnal_account(self):
-        self.account_tab.heading('numeroCompte', text='Numéro du compte')
+        self.account_tab.heading('iban', text='IBAN du compte')
         self.account_tab.heading('name', text="Nom du compte")
         self.account_tab.heading('solde', text='Solde')
         self.account_tab.heading('informations', text="Informations")
@@ -85,10 +95,11 @@ class Home(tk.Frame):
         self.account_tab.pack(pady=(10, 0))
         accounts = self.db.display_perso_account(self._person.person_id)
         for acc in accounts:
-            self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.num_account, acc.account_name, "{} €".format(acc.balance), 'click on me'))
+            print(acc.account_id)
+            self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.iban, acc.account_name, "{} €".format(acc.balance), 'click on me'))
 
     def add_row_to_account_tab(self, acc):
-        self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.num_account, acc.account_name, "{} €".format(acc.balance), 'click on me'))
+        self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.iban, acc.account_name, "{} €".format(acc.balance), 'click on me'))
 
     def new_account(self, event=None):
         top = tk.Toplevel(self.master)

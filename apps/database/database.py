@@ -352,9 +352,11 @@ class Database:
         '''
         self._cursor.execute(req, (iban, ))
         row = list(self._cursor.fetchone())
-        c = account.Account(row[0])
-        row[1] = self.select_person_by_id(row[1])
-        c.instanciate_account_from_bdd(row[1:])
+        print(row)
+        row[2] = self.select_person_by_id(row[2])
+        print(row[2])
+        c = account.Account(row[0], row[1])
+        c.instanciate_account_from_bdd(row[2:])
         return c
 
     def transaction(self, account1, account2, amount):
