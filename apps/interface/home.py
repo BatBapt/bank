@@ -52,16 +52,25 @@ class Home(tk.Frame):
         self.menu_widget()
 
         self.frame = tk.Frame(self.master, width=900, height=475, bg=Home.frame_bg_color)
-        self.frame.pack(pady=(10, 0))
+        self.frame.pack(side=tk.TOP)
 
-        self.welcome()
-
-        self.account_tab = ttk.Treeview(self.frame, columns=('iban', 'name', 'solde', 'informations'))
-
-        self.display_all_personnal_account()
+        tk.Label(self.frame, text="Bienvenu {}".format(self._person.full_name), bg=Home.frame_bg_color).pack(anchor=tk.NW)
+        tk.Label(self.frame, text="Voilà vos comptes: ", bg=Home.frame_bg_color).pack(anchor=tk.NW, pady=(5,0))
 
         deco_btn = tk.Button(self.frame, text="Se déconnecter", font=btn_font, command=self.deconnect)
-        deco_btn.pack(pady=(20, 20))
+        deco_btn.pack(anchor=tk.NE)
+
+        self.account_frame = tk.Frame(self.frame, width=450, height=475, bg="blue")
+        self.account_frame.pack(side=tk.TOP, pady=(10, 0))
+
+        self.benef_frame = tk.Frame(self.frame, width=450, height=475, bg="red")
+        self.benef_frame.pack(side=tk.BOTTOM, pady=(10, 0))
+
+        self.account_tab = ttk.Treeview(self.account_frame, columns=('iban', 'name', 'solde'))
+
+        self.benef_tab = ttk.Treeview(self.benef_frame, columns=('iban'))
+
+        self.display_all_personnal_informations()
 
         self.account_tab.bind("<Double-1>", self.details)
 
@@ -77,26 +86,39 @@ class Home(tk.Frame):
 
         self.add.configure(menu=self.add_menu)
 
-    def welcome(self):
-        tk.Label(self.frame, text="Bienvenu {}".format(self._person.full_name), bg=Home.frame_bg_color).pack()
-        tk.Label(self.frame, text="Voilà vos comptes: ", bg=Home.frame_bg_color).pack(pady=(5,5))
-
     def deconnect(self, event=None):
         deco = askquestion("Déconnection", "Voulez vous vraiement vous déconnecter? ")
         if deco == "yes":
             login.Login(self.master)
 
-    def display_all_personnal_account(self):
+    def display_all_personnal_informations(self):
         self.account_tab.heading('iban', text='IBAN du compte')
+        self.account_tab.column('iban', width=250, stretch=tk.NO)
         self.account_tab.heading('name', text="Nom du compte")
         self.account_tab.heading('solde', text='Solde')
-        self.account_tab.heading('informations', text="Informations")
+        self.account_tab.column('solde', width=75, stretch=tk.NO)
         self.account_tab['show'] = 'headings'
         self.account_tab.pack(pady=(10, 0))
+
+        self.benef_tab.heading('iban', text='IBAN du compte bénéficiaire')
+        self.benef_tab.column('iban', width=250, stretch=tk.NO)
+        self.benef_tab['show'] = 'headings'
+        self.benef_tab.pack(pady=(10, 0))
+
+
         accounts = self.db.display_perso_account(self._person.person_id)
         for acc in accounts:
+            print(acc)
+            self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.iban, acc.account_name, "{} €".format(acc.balance)))
+            benefs = self.db.display_all_beneficiaire(acc.account_id)
             print(acc.account_id)
-            self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.iban, acc.account_name, "{} €".format(acc.balance), 'click on me'))
+            print(benefs)
+            for benef in benefs:
+                self.benef_tab.insert('', 'end', iid=benef[0], values=(benef[2]))
+
+    def display_all_benef_account(self):
+
+        accounts = self.db.display_perso_account(self._person.person_id)
 
     def add_row_to_account_tab(self, acc):
         self.account_tab.insert('', 'end', iid=acc.account_id, values=(acc.iban, acc.account_name, "{} €".format(acc.balance), 'click on me'))
@@ -150,5 +172,11 @@ class Home(tk.Frame):
         new_account.owner = self._person
         self.db.insert_account(new_account)
         self.add_row_to_account_tab(new_account)
+
+        self.db.insert_beneficiaire(new_account, self._person, new_account.iban)
+
+        benefs = self.db.display_all_beneficiaire(self._person.person_id)
+
+        print(benefs)
 
         top.destroy()

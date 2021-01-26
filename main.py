@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 try:
     import apps.interface.app as app
@@ -17,4 +19,4 @@ if __name__  == "__main__":
     main()
 
 
-# 5t7qCh0vZH
+    # FFz3z0731h

@@ -163,29 +163,31 @@ class Database:
 
         return self._cursor.lastrowid
 
-    def insert_beneficiaire(self, account, iban):
+    def insert_beneficiaire(self, acc, perso, iban):
         try:
-            assert isinstance(account, account.Account), "[Database:insert_beneficiaire] Erreur ce n'est pas un compte."
+            assert isinstance(acc, account.Account), "[Database:insert_beneficiaire] Erreur ce n'est pas un compte."
+            assert isinstance(perso, person.Person), "[Database:insert_beneficiaire] Erreur ce n'est pas une personne."
             assert isinstance(iban, str), "[Database:insert_beneficiaire] Erreur l'IBAN n'est pas une chaine de caractère"
             assert len(iban) == 27, "[Database:insert_beneficiaire] Erreur l'IBAN est au mauvais format"
         except AssertionError as e:
             print(e)
             sys.exit(1)
 
-        account_id = account.account_id
-        if self.check_iban_exist("beneficiaire", account_id, iban) is not None:
+        account_id = acc.account_id
+        person_id = perso.person_id
+        if self.check_iban_exist("beneficiaire", person_id, iban) is not None:
             print("Erreur ce bénéficiaire est déjà présent")
             return -1
 
         req = '''
         INSERT INTO beneficiaire(
-            account_id,
+            person_id,
             iban
             ) VALUES (?, ?)
         '''
 
         try:
-            self._cursor.execute(req, (account_id, iban, ))
+            self._cursor.execute(req, (person_id, iban, ))
         except sqlite3.Error as e:
             print(e)
             sys.exit(1)
@@ -354,7 +356,6 @@ class Database:
         row = list(self._cursor.fetchone())
         print(row)
         row[2] = self.select_person_by_id(row[2])
-        print(row[2])
         c = account.Account(row[0], row[1])
         c.instanciate_account_from_bdd(row[2:])
         return c
@@ -388,13 +389,13 @@ class Database:
         self.__conn.commit()
 
     # Beneficiaire methods
-    def display_all_beneficiaire(self, account_id):
+    def display_all_beneficiaire(self, person_id):
         req = 'SELECT * FROM beneficiaire WHERE person_id=?'
-        self._cursor.execute(req, (account_id, ))
+        self._cursor.execute(req, (person_id, ))
         return self._cursor.fetchall()
 
     def check_iban_exist(self, table, id, iban):
-        req = 'SELECT iban FROM {} WHERE iban=? AND id=?'.format(table)
+        req = 'SELECT iban FROM {} WHERE iban=? AND person_id=?'.format(table)
         self._cursor.execute(req, (iban, id, ))
         return self._cursor.fetchone()
 
